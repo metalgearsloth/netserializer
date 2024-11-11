@@ -26,6 +26,7 @@ namespace NetSerializer
 			new ObjectSerializer(),
 			new PrimitivesSerializer(),
 			new ArraySerializer(),
+			new ImmutableArraySerializer(),
 			new EnumSerializer(),
 			new DictionarySerializer(),
 			new NullableSerializer(),
