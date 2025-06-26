@@ -13,6 +13,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Diagnostics;
+using System.Text;
 using NetSerializer.TypeSerializers;
 
 namespace NetSerializer
@@ -118,6 +119,9 @@ namespace NetSerializer
 
 			var stack = new Stack<Type>(roots);
 			var addedMap = new Dictionary<Type, uint>();
+#if DEBUG
+			var originMap = new Dictionary<Type, Type>();
+#endif
 
 			while (stack.Count > 0)
 			{
@@ -129,26 +133,48 @@ namespace NetSerializer
 				if (type.IsAbstract || type.IsInterface)
 					continue;
 
-				if (type.ContainsGenericParameters)
-					throw new NotSupportedException(String.Format("Type {0} contains generic parameters", type.FullName));
-
-				while (m_runtimeTypeIDList.ContainsTypeID(m_nextAvailableTypeID))
-					m_nextAvailableTypeID++;
-
-				uint typeID = m_nextAvailableTypeID++;
-
-				ITypeSerializer serializer = GetTypeSerializer(type);
-
-				var data = new TypeData(type, typeID, serializer);
-				m_runtimeTypeMap[type] = data;
-				m_runtimeTypeIDList[typeID] = data;
-
-				addedMap[type] = typeID;
-
-				foreach (var t in serializer.GetSubtypes(type))
+				try
 				{
-					if (m_runtimeTypeMap.ContainsKey(t) == false)
-						stack.Push(t);
+					if (type.ContainsGenericParameters)
+						throw new NotSupportedException(String.Format("Type {0} contains generic parameters",
+							type.FullName));
+
+					while (m_runtimeTypeIDList.ContainsTypeID(m_nextAvailableTypeID))
+						m_nextAvailableTypeID++;
+
+					uint typeID = m_nextAvailableTypeID++;
+
+					ITypeSerializer serializer = GetTypeSerializer(type);
+
+					var data = new TypeData(type, typeID, serializer);
+					m_runtimeTypeMap[type] = data;
+					m_runtimeTypeIDList[typeID] = data;
+
+					addedMap[type] = typeID;
+
+					foreach (var t in serializer.GetSubtypes(type))
+					{
+						if (m_runtimeTypeMap.ContainsKey(t) == false)
+						{
+							stack.Push(t);
+
+#if DEBUG
+							originMap[t] = type;
+#endif
+						}
+					}
+				}
+				catch (Exception e)
+				{
+					var sb = new StringBuilder($"Failed to add {type} to serializer.");
+#if DEBUG
+					for (var pt = type; pt != null; pt = originMap.GetValueOrDefault(pt))
+					{
+						sb.AppendLine();
+						sb.Append($"Referenced by: {pt}");
+					}
+#endif
+					throw new NotSupportedException(sb.ToString(), e);
 				}
 			}
 
