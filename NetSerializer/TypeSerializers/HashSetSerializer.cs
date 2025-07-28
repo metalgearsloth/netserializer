@@ -1,5 +1,6 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -15,7 +16,7 @@ namespace NetSerializer.TypeSerializers
 
             var genTypeDef = type.GetGenericTypeDefinition();
 
-            return genTypeDef == typeof(HashSet<>);
+            return genTypeDef == typeof(HashSet<>) || genTypeDef == typeof(ImmutableHashSet<>);
         }
 
         public IEnumerable<Type> GetSubtypes(Type type)
@@ -31,13 +32,13 @@ namespace NetSerializer.TypeSerializers
                 throw new Exception();
 
             var genTypeDef = type.GetGenericTypeDefinition();
-            
-            Debug.Assert(genTypeDef == typeof(HashSet<>));
+
+            Debug.Assert(genTypeDef == typeof(HashSet<>) || genTypeDef == typeof(ImmutableHashSet<>));
 
             var containerType = GetType();
 
-            var reader = containerType.GetMethod("WritePrimitive", BindingFlags.Static | BindingFlags.Public);
-            
+            var reader = Helpers.GetGenWriter(containerType, genTypeDef);
+
             var genArgs = type.GetGenericArguments();
 
             reader = reader.MakeGenericMethod(genArgs);
@@ -53,28 +54,28 @@ namespace NetSerializer.TypeSerializers
                 throw new Exception();
 
             var genTypeDef = type.GetGenericTypeDefinition();
-            
-            Debug.Assert(genTypeDef == typeof(HashSet<>));
+
+            Debug.Assert(genTypeDef == typeof(HashSet<>) || genTypeDef == typeof(ImmutableHashSet<>));
 
             var containerType = GetType();
 
-            var reader = containerType.GetMethod("ReadPrimitive", BindingFlags.Static | BindingFlags.Public);
-            
+            var reader = Helpers.GetGenReader(containerType, genTypeDef);
+
             var genArgs = type.GetGenericArguments();
 
             reader = reader.MakeGenericMethod(genArgs);
 
             return reader;
         }
-        
-        public static void WritePrimitive<T>(Serializer serializer, Stream stream, HashSet<T> value)
+
+        public static void BaseWritePrimitive<T>(Serializer serializer, Stream stream, IReadOnlySet<T> value)
         {
             if (value == null)
             {
                 serializer.Serialize(stream, null);
                 return;
             }
-            
+
             var array = new T[value.Count];
 
             var i = 0;
@@ -82,6 +83,16 @@ namespace NetSerializer.TypeSerializers
                 array[i++] = t;
 
             serializer.Serialize(stream, array);
+        }
+
+        public static void WritePrimitive<T>(Serializer serializer, Stream stream, HashSet<T> value)
+        {
+	        BaseWritePrimitive(serializer, stream, value);
+        }
+
+        public static void WritePrimitive<T>(Serializer serializer, Stream stream, ImmutableHashSet<T> value)
+        {
+	        BaseWritePrimitive(serializer, stream, value);
         }
 
         public static void ReadPrimitive<T>(Serializer serializer, Stream stream, out HashSet<T> value)
@@ -98,6 +109,18 @@ namespace NetSerializer.TypeSerializers
 
             foreach (var t in array)
                 value.Add(t);
+        }
+
+        public static void ReadPrimitive<T>(Serializer serializer, Stream stream, out ImmutableHashSet<T> value)
+        {
+	        ReadPrimitive(serializer, stream, out HashSet<T> builder);
+	        if (builder == null)
+	        {
+		        value = null;
+		        return;
+	        }
+
+            value = builder.ToImmutableHashSet();
         }
     }
 }
