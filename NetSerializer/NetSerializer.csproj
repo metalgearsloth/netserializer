@@ -11,6 +11,8 @@
     <RepositoryUrl>https://github.com/tomba/netserializer</RepositoryUrl>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyName>Robust.NetSerializer</AssemblyName>
+
+    <NoWarn>SYSLIB0050</NoWarn> <!-- Mute warnings about BinaryFormatter. -->
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
