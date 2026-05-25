@@ -11,3 +11,6 @@ packages
 
 # VS
 .vs/
+
+# C# Dev Kit cache file
+*.lscache
