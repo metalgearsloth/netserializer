@@ -346,6 +346,30 @@ namespace NetSerializer
 			return ObjectSerializer.TryDeserialize(this, stream, out ob);
 		}
 
+		public bool TryGetTypeFromSerializedObject(Stream stream, out Type type)
+		{
+			Primitives.ReadPrimitive(stream, out uint id);
+			return TryGetTypeFromId(id, out type);
+		}
+
+		public bool TryGetTypeFromId(uint id, out Type type)
+		{
+			if (id == 0)
+			{
+				type = null;
+				return true;
+			}
+
+			if (m_runtimeTypeIDList.TryGetValue(id, out var data))
+			{
+				type = data.Type;
+				return true;
+			}
+
+			type = null;
+			return false;
+		}
+
 		/// <summary>
 		/// Serialize object graph without writing the type-id of the root type. This can be useful e.g. when
 		/// serializing a known value type, as this will avoid boxing.
