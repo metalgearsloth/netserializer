@@ -112,7 +112,7 @@ namespace NetSerializer
 
 		public static void ReadPrimitive<TKey, TValue>(Serializer serializer, Stream stream, out Dictionary<TKey, TValue> value)
 		{
-			var kvpArray = (KeyValuePair<TKey, TValue>[])serializer.Deserialize(stream);
+			var kvpArray = serializer.Deserialize<KeyValuePair<TKey, TValue>[]>(stream);
 
 			if (kvpArray == null)
 			{

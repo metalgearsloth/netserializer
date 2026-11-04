@@ -49,7 +49,7 @@ internal sealed class LinkedListSerializer : IStaticTypeSerializer
 	// ReSharper disable once UnusedMember.Local
 	private static void Deserialize<T>(Serializer serializer, Stream stream, out LinkedList<T> ob)
 	{
-		var array = (T[]) serializer.Deserialize(stream);
+		var array = serializer.Deserialize<T[]>(stream);
 
 		ob = new LinkedList<T>(array);
 	}

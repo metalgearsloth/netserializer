@@ -1,6 +1,6 @@
 ﻿/*
  * Copyright 2015 Tomi Valkeinen
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -60,30 +60,32 @@ namespace NetSerializer
 
 		public static void Deserialize(Serializer serializer, Stream stream, out object ob)
 		{
-			uint id;
-
-			Primitives.ReadPrimitive(stream, out id);
-
-			if (id == 0)
-			{
-				ob = null;
-				return;
-			}
-
-			if (id == Serializer.ObjectTypeId)
-			{
-				ob = new object();
-				return;
-			}
-
-			var del = serializer.GetDeserializeTrampolineFromId(id);
-			del(serializer, stream, out ob);
+			DeserializeTyped<object>(serializer, stream, out ob);
 		}
 
 		public static void DeserializeTyped<T>(Serializer serializer, Stream stream, out T value)
 		{
-			// Check before assigning it. This just ensures we get an InvalidCastException out instead of sending bad data.
-			Deserialize(serializer, stream, out var ob);
+			Primitives.ReadPrimitive(stream, out uint id);
+
+			if (id == 0)
+			{
+				value = (T)(object)null;
+				return;
+			}
+
+			// Validate the ID BEFORE calling its reader.
+			object ob;
+			if (id == Serializer.ObjectTypeId)
+			{
+				if (!typeof(T).IsAssignableFrom(typeof(object)))
+					throw new InvalidCastException($"Serialized type {typeof(object)} is not assignable to {typeof(T)}.");
+				ob = new object();
+			}
+			else
+			{
+				var del = serializer.GetDeserializeTrampolineFromId(id, typeof(T));
+				del(serializer, stream, out ob);
+			}
 			value = (T)ob;
 		}
 	}

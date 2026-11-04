@@ -332,6 +332,12 @@ namespace NetSerializer
 			return ob;
 		}
 
+		public T Deserialize<T>(Stream stream)
+		{
+			ObjectSerializer.DeserializeTyped(this, stream, out T value);
+			return value;
+		}
+
 		public void Deserialize(Stream stream, out object ob)
 		{
 			ObjectSerializer.Deserialize(this, stream, out ob);
@@ -421,6 +427,14 @@ namespace NetSerializer
 			{
 				return GenerateReaderTrampoline(data.Type);
 			}
+		}
+
+		internal DeserializeDelegate<object> GetDeserializeTrampolineFromId(uint id, Type expectedType)
+		{
+			var data = m_runtimeTypeIDList[id];
+			if (!expectedType.IsAssignableFrom(data.Type))
+				throw new InvalidCastException($"Serialized type {data.Type} is not assignable to {expectedType}.");
+			return GetDeserializeTrampolineFromId(id);
 		}
 
 		ITypeSerializer GetTypeSerializer(Type type)

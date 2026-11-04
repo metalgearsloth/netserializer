@@ -97,7 +97,7 @@ namespace NetSerializer.TypeSerializers
 
         public static void ReadPrimitive<T>(Serializer serializer, Stream stream, out HashSet<T> value)
         {
-            var array = (T[])serializer.Deserialize(stream);
+            var array = serializer.Deserialize<T[]>(stream);
 
             if (array == null)
             {
